@@ -11,17 +11,16 @@ game_info = pd.read_csv('games.csv')
 game_info.dropna(inplace=True)      # Deleted rows which consists at least one null
 game_info = game_info.loc[game_info['Year_of_Release'] >= 2000]     # Deleted rows which Year is less than 2000
 fig = px.scatter(game_info, x="User_Score", y="Critic_Score", color="Genre", hover_name="Name",
-                 log_x=True, size_max=60)
+                 log_x=True, size_max=40)
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
-app.layout = html.Table(className="responsive-table",
-                      children=[
+app.layout = html.Table(className="responsive-table", children=[
     html.Tr(children=[
         html.H3(
-            children='Наименование дашборда'
+            children='Наименование дашборда', style={'align' : "center"}
         )
     ]),
     html.Tr(children=[
@@ -44,11 +43,10 @@ app.layout = html.Table(className="responsive-table",
         html.Th()
     ]),
     html.Tr(children=[
-        html.Th(children=['График 1: Stacked area plot, показывающий выпуск игр по годам и платформам.']),
-        html.Th(html.H6(children=['График 2: Scatter plot с разбивкой по жанрам'
-                                  ' (каждому жанру соответствует один цвет). '
-                                  'По оси X - оценки игроков, по оси Y - оценки критиков'])),
-                dcc.Graph(id='life-exp-vs-gdp', figure=fig)
+        html.Th(dcc.Graph(id='graph0', figure=fig, style = {'display': 'inline-block', 'width': '90vh', 'height':'80vh',
+                                                            'align' : "center"})),
+        html.Th(dcc.Graph(id='graph1', figure=fig, style = {'width': '90vh', 'height':'80vh',
+                                                            'align': 'center'}))
     ]),
     html.Tr(children=[
         html.Th(children='Фильтр 3: Интервал годов выпуска'),

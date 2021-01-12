@@ -11,35 +11,7 @@ from dash.dependencies import Input, Output
 game_info = pd.read_csv('games.csv')
 game_info.dropna(inplace=True)      # Deleted rows which consists at least one null
 game_info = game_info.loc[game_info['Year_of_Release'] >= 2000]     # Deleted rows which Year is less than 2000
-
-rate_res=0
-genre_res=0
-
-
-def fig():
-    return px.scatter(game_info, x="User_Score", y="Critic_Score", color="Genre", hover_name="Name",
-                          log_x=True)
-
 YEARS = pd.unique(game_info['Year_of_Release']).tolist()    # Количество разных лет
-
-def prepare_to_Stacked_area_plot(value):
-    """Функция построения Stacked area plot, показывающего выпуск игр по годам и платформам"""
-    PLATFORMS = pd.unique(game_info['Platform']).tolist()   # Количество разных платформ
-    Stacked_area_plot = go.Figure()
-    for platform in PLATFORMS:
-        res_years=[]
-        amount_games = []
-        for year in YEARS:
-            if value[0]<=year<=value[1]:
-                res_years.append(year)
-                amount_games.append(game_info[(game_info.Platform == platform) &
-                                          (game_info.Year_of_Release == year)].index.shape[0]) # Количество игр для данной платформы в этом году
-        Stacked_area_plot.add_trace(go.Scatter(name=platform,
-            x=res_years,
-            y=amount_games,
-            stackgroup='one'))
-    return Stacked_area_plot
-
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
@@ -47,12 +19,13 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.layout = html.Table(style = {"width":"100%"}, className="responsive-table", children=[
     html.Tr(children=[
         html.H3(
-            children='Наименование дашборда', style={'align' : "center"}
+            children='Состояние игровой индустрии', style={'align' : "center"}
         )
     ]),
     html.Tr(children=[
         html.H4(
-            children='Описание дашборда (назначение, краткая инструкция по использованию)'
+            children='Дашборд предназначен для ознакомления с тендециями в игровой IT-индустрии. Представлено два графика. Первый хорошо описывает динамику релизов игр. '
+                     'Второй - качество этих продуктов', style = {'textalign' : "center"}
         )
     ]),
     html.Tr(children=[
@@ -69,12 +42,12 @@ app.layout = html.Table(style = {"width":"100%"}, className="responsive-table", 
                 {'label': 'Fightling', 'value': 'Fightling'},
                 {'label': 'Simulation', 'value': 'Simulation'},
                 {'label': 'Role-Playing', 'value': 'Role-Playing'},
-                {'label': 'Adventure', 'value': 'Adventure'}],
-                value=['Sports'],
+                {'label': 'Приключения', 'value': 'Adventure'}],
+                value=['Sports', 'Shooter'],
                 multi=True)]
                 ),
         html.Th(children=[
-            html.Label('Фильтр2: Фильтр рейтингов (множественный выбор)'),
+            html.Label('Фильтр2: Фильтр рейтингов'),
             dcc.Dropdown(id='filter2rating', clearable=False, options=[
                 {'label': 'E', 'value': 'E'},
                 {'label': 'M', 'value': 'M'},
@@ -87,9 +60,7 @@ app.layout = html.Table(style = {"width":"100%"}, className="responsive-table", 
         )]
     ),
     html.Tr(children=[
-        html.Th(
-            children='Интерактивный текст 1: Количество выбранных игр (результат фильтрации)'
-        ),
+        html.Th(dcc.Markdown(id='quantity')),
         html.Th()
     ]),
     html.Tr(children=[
@@ -115,6 +86,7 @@ app.layout = html.Table(style = {"width":"100%"}, className="responsive-table", 
 '''Обработчик фильтров'''
 @app.callback(Output('graph0', 'figure'),
               Output('graph1', 'figure'),
+              Output('quantity', 'children'),
               Input('filter1genre', 'value'),
               Input('filter2rating', 'value'),
               Input('filter3years', 'value'))
@@ -136,6 +108,7 @@ def update_output(filter1genre, filter2rating, filter3years):
             res2 = pd.concat([res1[res1.Rating == filter2rating[i]], res2])
     else:
         res2 = res1
+        filter2rating = pd.unique(game_info['Rating']).tolist()
 
     # Работаем с фильтром жанров
     if filter1genre:
@@ -144,6 +117,7 @@ def update_output(filter1genre, filter2rating, filter3years):
             res3 = pd.concat([res2[res2.Genre == filter1genre[i]], res3])
     else:
         res3 = res2
+        filter1genre = pd.unique(game_info['Genre']).tolist()
 
     """Функция построения Stacked area plot, показывающего выпуск игр по годам и платформам"""
     PLATFORMS = pd.unique(res3['Platform']).tolist()  # Количество разных платформ
@@ -164,12 +138,11 @@ def update_output(filter1genre, filter2rating, filter3years):
                                                y=amount_games,
                                                stackgroup='one'))
 
+    quantity_games=res3.shape[0]
+
     return Stacked_area_plot, px.scatter(res3, x="User_Score", y="Critic_Score",color="Genre", hover_name="Name",
-                                         log_x=True)
-
-
-
-
+                                         log_x=True, title='Scatter plot с разбивкой по жанрам'),\
+           ("Количество игр: "+str(quantity_games))
 
 
 if __name__ == '__main__':

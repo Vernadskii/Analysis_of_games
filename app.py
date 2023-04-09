@@ -1,148 +1,151 @@
-# -*- coding: utf-8 -*-
 import dash
-import dash_core_components as dcc
-import dash_html_components as html
+from dash import dcc, html
 import pandas as pd
-import numpy as np
 import plotly.express as px
-import plotly.graph_objects as go
 from dash.dependencies import Input, Output
+from pandas import DataFrame
 
-game_info = pd.read_csv('games.csv')
-game_info.dropna(inplace=True)      # Deleted rows which consists at least one null
-game_info = game_info.loc[game_info['Year_of_Release'] >= 2000]     # Deleted rows which Year is less than 2000
-YEARS = pd.unique(game_info['Year_of_Release']).tolist()    # Количество разных лет
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+from auxiliary.config import LOG_LEVEL
+from auxiliary.stacked_area_plot import fill_stacked_area_plot
+from auxiliary.custom_logger import get_app_logger
 
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+logger = get_app_logger(level=LOG_LEVEL)
 
-app.layout = html.Table(style = {"width":"100%"}, className="responsive-table", children=[
-    html.Tr(children=[
+GAME_INFO = pd.read_csv('games.csv')
+# Delete rows which consist of at least one null
+GAME_INFO.dropna(inplace=True)
+# Delete rows which Year is less than 2000
+GAME_INFO = GAME_INFO[GAME_INFO['Year_of_Release'] >= 2000]
+YEARS = pd.unique(GAME_INFO['Year_of_Release']).tolist()  # list with unique years
+
+result_data: DataFrame = GAME_INFO
+
+app = dash.Dash(__name__, title='Game Industry Analytics',
+                external_stylesheets=['https://codepen.io/chriddyp/pen/bWLwgP.css'])
+
+app.layout = \
+    html.Div(children=[
+
         html.H3(
-            children='Состояние игровой индустрии', style={'align' : "center"}
-        )
-    ]),
-    html.Tr(children=[
+            children='The state of the gaming industry',
+            style={'width': '100%', 'display': 'flex', 'alignItems': 'center',
+                   'justifyContent': 'center'}
+        ),
         html.H4(
-            children='Дашборд предназначен для ознакомления с тендециями в игровой IT-индустрии. Представлено два графика. Первый хорошо описывает динамику релизов игр. '
-                     'Второй - качество этих продуктов', style = {'textalign' : "center"}
-        )
-    ]),
-    html.Tr(children=[
-        html.Th(children=[
-            html.Label('Фильтр1: Фильтр жанров (множественный выбор)'),
-            dcc.Dropdown(id='filter1genre', clearable=False, options=[
-                {'label': 'Спортивные', 'value': 'Sports'},
-                {'label': 'Гонки', 'value': 'Racing'},
-                {'label': 'Platform', 'value': 'Platform'},
-                {'label': 'Misc', 'value': 'Misc'},
-                {'label': 'Action', 'value': 'Action'},
-                {'label': 'Puzzle', 'value': 'Puzzle'},
-                {'label': 'Shooter', 'value': 'Shooter'},
-                {'label': 'Fightling', 'value': 'Fightling'},
-                {'label': 'Simulation', 'value': 'Simulation'},
-                {'label': 'Role-Playing', 'value': 'Role-Playing'},
-                {'label': 'Приключения', 'value': 'Adventure'}],
-                value=['Sports', 'Shooter'],
-                multi=True)]
+            children='The dashboard is designed to get acquainted with the trends in the gaming'
+                     ' IT industry. Two graphs are presented. The first describes the dynamics '
+                     'of game releases well. The second is the quality of these products.',
+            style={'width': '100%', 'display': 'flex', 'alignItems': 'center',
+                   'justifyContent': 'center'}
+        ),
+
+        html.Table(style={"width": "100%"}, className="responsive-table", children=[
+
+            html.Tr(
+                children=[
+
+                    html.Th(
+                        children=[
+                            html.Label('Filter1: Genre filter (multiple choice)'),
+                            dcc.Dropdown(id='filter1genre', clearable=False, options=[
+                                {'label': 'Sports', 'value': 'Sports'},
+                                {'label': 'Racing', 'value': 'Racing'},
+                                {'label': 'Platform', 'value': 'Platform'},
+                                {'label': 'Misc', 'value': 'Misc'},
+                                {'label': 'Action', 'value': 'Action'},
+                                {'label': 'Puzzle', 'value': 'Puzzle'},
+                                {'label': 'Shooter', 'value': 'Shooter'},
+                                {'label': 'Fightling', 'value': 'Fightling'},
+                                {'label': 'Simulation', 'value': 'Simulation'},
+                                {'label': 'Role-Playing', 'value': 'Role-Playing'},
+                                {'label': 'Adventure', 'value': 'Adventure'}
+                            ],
+                                         value=['Sports', 'Shooter'],
+                                         multi=True)
+                        ]
+                    ),
+
+                    html.Th(children=[
+                        html.Label('Filter2: Rating filter'),
+                        dcc.Dropdown(id='filter2rating', clearable=False, options=[
+                            {'label': 'E', 'value': 'E'},
+                            {'label': 'M', 'value': 'M'},
+                            {'label': 'T', 'value': 'T'},
+                            {'label': 'E10+', 'value': 'E10+'},
+                            {'label': 'AO', 'value': 'AO'},
+                            {'label': 'RP', 'value': 'RP'}
+                        ],
+                                     value=['E', 'M', 'T'],
+                                     multi=True)]
+                    )
+
+                ]
+            ),
+
+            html.Tr(children=[
+                html.Td(dcc.Markdown(
+                    id='quantity',
+                    style={'width': '100%', 'display': 'flex', 'alignItems': 'center',
+                           'justifyContent': 'center'}
                 ),
-        html.Th(children=[
-            html.Label('Фильтр2: Фильтр рейтингов'),
-            dcc.Dropdown(id='filter2rating', clearable=False, options=[
-                {'label': 'E', 'value': 'E'},
-                {'label': 'M', 'value': 'M'},
-                {'label': 'T', 'value': 'T'},
-                {'label': 'E10+', 'value': 'E10+'},
-                {'label': 'AO', 'value': 'AO'},
-                {'label': 'RP', 'value': 'RP'}],
-                value=['E', 'M', 'T'],
-                multi=True)]
-        )]
-    ),
-    html.Tr(children=[
-        html.Th(dcc.Markdown(id='quantity')),
-        html.Th()
-    ]),
-    html.Tr(children=[
-        html.Th(dcc.Graph(id='graph0', style = {'display': 'inline-block', 'width': '90vh', 'height':'80vh',
-                                                            'align' : "center"})),
-        html.Th(dcc.Graph(id='graph1', style = {'width': '90vh', 'height':'80vh',
-                                                            'align': 'center'}))
-    ]),
-    html.Tr(children=[
-        html.Th(children=[
-            html.Label('Фильтр 3: Интервал годов выпуска'),
+                    colSpan='2'),
+            ]),
+            html.Tr(children=[
+                html.Td(dcc.Graph(id='stacked_area_plot',
+                                  # style={'height':'auto', 'width': '100px'}
+                                  style={
+                                      'height': '50vh',
+                                      # 'width': '100%'
+                                  }
+                                  )
+                        ),
+                html.Td(dcc.Graph(id='scatter_plot',
+                                  style={
+                                      # 'width': '100%',
+                                      'height': '50vh',
+                                      'align': 'center'}
+                                  )
+                        )
+            ])
+        ]),
+        html.Div(children=[
+            html.Label('Filter3: Interval of release years'),
             dcc.RangeSlider(
                 id='filter3years',
-                marks={i: '{}'.format(i) for i in range(int(min(YEARS)), int(max(YEARS)+1))},
-                min = int(min(YEARS)),
-                max = int(max(YEARS)),
-                value=[int(min(YEARS))+2, int(min(YEARS))+7]
-            )]),
-        html.Th(id='output-container-range-slider')
+                marks={i: '{}'.format(i) for i in
+                       range(int(min(YEARS)), int(max(YEARS) + 1))},
+                min=int(min(YEARS)),
+                max=int(max(YEARS)),
+                step=1,
+                value=[int(min(YEARS)) + 2, int(min(YEARS)) + 7]
+            ),
+        ])
     ])
-])
 
-'''Обработчик фильтров'''
-@app.callback(Output('graph0', 'figure'),
-              Output('graph1', 'figure'),
+
+@app.callback(Output('stacked_area_plot', 'figure'),
+              Output('scatter_plot', 'figure'),
               Output('quantity', 'children'),
               Input('filter1genre', 'value'),
               Input('filter2rating', 'value'),
               Input('filter3years', 'value'))
-def update_output(filter1genre, filter2rating, filter3years):
-    print(filter1genre, filter2rating, filter3years)
+def update_output(filter1genre: list, filter2rating: list, filter3years: list):
+    logger.info(f"Genres are {filter1genre}, ratings are {filter2rating}, years are {filter3years}")
 
-    # Работаем с годовым фильтром
-    x = filter3years[0]
-    res1 = game_info[game_info.Year_of_Release == x]
-    x += 1
-    while x <= filter3years[1]:
-        res1 = pd.concat([game_info[game_info.Year_of_Release == x], res1])
-        x += 1
+    # Working with year filter
+    years_interval = list(range(filter3years[0], filter3years[1] + 1))
+    result = GAME_INFO[GAME_INFO['Year_of_Release'].isin(years_interval)]
 
-    # Работаем с фильтром рейтингов
-    if filter2rating:
-        res2 = res1[res1.Rating == filter2rating[0]]
-        for i in range(1, len(filter2rating)):
-            res2 = pd.concat([res1[res1.Rating == filter2rating[i]], res2])
-    else:
-        res2 = res1
-        filter2rating = pd.unique(game_info['Rating']).tolist()
+    # Working with rating filter
+    result = result[result['Rating'].isin(filter2rating)]
 
-    # Работаем с фильтром жанров
-    if filter1genre:
-        res3 = res2[res2.Genre == filter1genre[0]]
-        for i in range(1, len(filter1genre)):
-            res3 = pd.concat([res2[res2.Genre == filter1genre[i]], res3])
-    else:
-        res3 = res2
-        filter1genre = pd.unique(game_info['Genre']).tolist()
+    # Working with genre filter
+    result = result[result['Genre'].isin(filter1genre)]
 
-    """Функция построения Stacked area plot, показывающего выпуск игр по годам и платформам"""
-    PLATFORMS = pd.unique(res3['Platform']).tolist()  # Количество разных платформ
-    Stacked_area_plot = go.Figure(layout=go.Layout(
-        title=go.layout.Title(text="Stacked area plot, показывающий выпуск игр по годам и платформам")))
-    for platform in PLATFORMS:
-        res_years = []
-        amount_games = []
-        for year in YEARS:
-            if filter3years[0] <= year <= filter3years[1]:
-                res_years.append(year)
-                amount_games.append(game_info[(game_info.Platform == platform) &
-                                              (game_info.Year_of_Release == year) &
-                                              (game_info.Genre.isin(filter1genre)) &
-                                    (game_info.Rating.isin(filter2rating))].index.shape[0])  # Количество игр для данной платформы в этом году
-        Stacked_area_plot.add_trace(go.Scatter(name=platform,
-                                               x=res_years,
-                                               y=amount_games,
-                                               stackgroup='one'))
-
-    quantity_games=res3.shape[0]
-
-    return Stacked_area_plot, px.scatter(res3, x="User_Score", y="Critic_Score",color="Genre", hover_name="Name",
-                                         log_x=True, title='Scatter plot с разбивкой по жанрам'),\
-           ("Количество игр: "+str(quantity_games))
+    return fill_stacked_area_plot(result), \
+        px.scatter(result, x="User_Score", y="Critic_Score", color="Genre",
+                   hover_name="Name", log_x=True, title='Scatter plot by genre'), \
+        ("Number of games: " + str(result.shape[0]))
 
 
 if __name__ == '__main__':

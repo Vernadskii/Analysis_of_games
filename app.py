@@ -23,91 +23,92 @@ result_data: DataFrame = GAME_INFO
 app = dash.Dash(__name__, title='Game Industry Analytics',
                 external_stylesheets=['https://codepen.io/chriddyp/pen/bWLwgP.css'])
 
-app.layout = html.Table(style={"width": "100%"}, className="responsive-table", children=[
+app.layout = \
+    html.Div(children=[
 
-    html.Tr(
-        children=[
-            html.H3(
-                children='The state of the gaming industry', style={'align': "center"}
-            )
-        ]
-    ),
+        html.H3(
+            children='The state of the gaming industry',
+            style={'width': '100%', 'display': 'flex', 'alignItems': 'center',
+                   'justifyContent': 'center'}
+        ),
+        html.H4(
+            children='The dashboard is designed to get acquainted with the trends in the gaming'
+                     ' IT industry. Two graphs are presented. The first describes the dynamics '
+                     'of game releases well. The second is the quality of these products.',
+            style={'width': '100%', 'display': 'flex', 'alignItems': 'center',
+                   'justifyContent': 'center'}
+        ),
 
-    html.Tr(
-        children=[
-            html.H4(
-                children='The dashboard is designed to get acquainted with the trends in the gaming'
-                         ' IT industry. Two graphs are presented. The first describes the dynamics '
-                         'of game releases well. The second is the quality of these products.',
-            )
-        ]
-    ),
+        html.Table(style={"width": "100%"}, className="responsive-table", children=[
 
-    html.Tr(
-        children=[
-            html.Th(
+            html.Tr(
                 children=[
-                    html.Label('Filter1: Genre filter (multiple choice)'),
-                    dcc.Dropdown(id='filter1genre', clearable=False, options=[
-                        {'label': 'Sports', 'value': 'Sports'},
-                        {'label': 'Racing', 'value': 'Racing'},
-                        {'label': 'Platform', 'value': 'Platform'},
-                        {'label': 'Misc', 'value': 'Misc'},
-                        {'label': 'Action', 'value': 'Action'},
-                        {'label': 'Puzzle', 'value': 'Puzzle'},
-                        {'label': 'Shooter', 'value': 'Shooter'},
-                        {'label': 'Fightling', 'value': 'Fightling'},
-                        {'label': 'Simulation', 'value': 'Simulation'},
-                        {'label': 'Role-Playing', 'value': 'Role-Playing'},
-                        {'label': 'Adventure', 'value': 'Adventure'}
-                    ],
-                                 value=['Sports', 'Shooter'],
-                                 multi=True)
+                    html.Th(
+                        children=[
+                            html.Label('Filter1: Genre filter (multiple choice)'),
+                            dcc.Dropdown(id='filter1genre', clearable=False, options=[
+                                {'label': 'Sports', 'value': 'Sports'},
+                                {'label': 'Racing', 'value': 'Racing'},
+                                {'label': 'Platform', 'value': 'Platform'},
+                                {'label': 'Misc', 'value': 'Misc'},
+                                {'label': 'Action', 'value': 'Action'},
+                                {'label': 'Puzzle', 'value': 'Puzzle'},
+                                {'label': 'Shooter', 'value': 'Shooter'},
+                                {'label': 'Fightling', 'value': 'Fightling'},
+                                {'label': 'Simulation', 'value': 'Simulation'},
+                                {'label': 'Role-Playing', 'value': 'Role-Playing'},
+                                {'label': 'Adventure', 'value': 'Adventure'}
+                            ],
+                                         value=['Sports', 'Shooter'],
+                                         multi=True)
+                        ]
+                    ),
+
+                    html.Th(children=[
+                        html.Label('Filter2: Rating filter'),
+                        dcc.Dropdown(id='filter2rating', clearable=False, options=[
+                            {'label': 'E', 'value': 'E'},
+                            {'label': 'M', 'value': 'M'},
+                            {'label': 'T', 'value': 'T'},
+                            {'label': 'E10+', 'value': 'E10+'},
+                            {'label': 'AO', 'value': 'AO'},
+                            {'label': 'RP', 'value': 'RP'}
+                        ],
+                                     value=['E', 'M', 'T'],
+                                     multi=True)]
+                    )
                 ]
             ),
 
-            html.Th(children=[
-                html.Label('Filter2: Rating filter'),
-                dcc.Dropdown(id='filter2rating', clearable=False, options=[
-                    {'label': 'E', 'value': 'E'},
-                    {'label': 'M', 'value': 'M'},
-                    {'label': 'T', 'value': 'T'},
-                    {'label': 'E10+', 'value': 'E10+'},
-                    {'label': 'AO', 'value': 'AO'},
-                    {'label': 'RP', 'value': 'RP'}
-                ],
-                             value=['E', 'M', 'T'],
-                             multi=True)]
-            )
-        ]
-    ),
-
-    html.Tr(children=[
-        html.Th(dcc.Markdown(id='quantity')),
-        html.Th()
-    ]),
-    html.Tr(children=[
-        html.Th(dcc.Graph(id='graph0',
-                          style={'display': 'inline-block', 'width': '90vh', 'height': '80vh',
-                                 'align': "center"})),
-        html.Th(dcc.Graph(id='graph1', style={'width': '90vh', 'height': '80vh',
-                                              'align': 'center'}))
-    ]),
-    html.Tr(children=[
-        html.Th(children=[
+            html.Tr(children=[
+                html.Td(dcc.Markdown(
+                    id='quantity',
+                    style={'width': '100%', 'display': 'flex', 'alignItems': 'center',
+                           'justifyContent': 'center'}),
+                    colSpan='2'),
+            ]),
+            html.Tr(children=[
+                html.Td(dcc.Graph(id='graph0',
+                                  style={'display': 'inline-block', 'width': '90vh',
+                                         'height': '80vh',
+                                         'align': "center"})),
+                html.Td(dcc.Graph(id='graph1', style={'width': '90vh', 'height': '80vh',
+                                                      'align': 'center'}))
+            ])
+        ]),
+        html.Div(children=[
             html.Label('Filter3: Interval of release years'),
             dcc.RangeSlider(
                 id='filter3years',
-                marks={i: '{}'.format(i) for i in range(int(min(YEARS)), int(max(YEARS) + 1))},
+                marks={i: '{}'.format(i) for i in
+                       range(int(min(YEARS)), int(max(YEARS) + 1))},
                 min=int(min(YEARS)),
                 max=int(max(YEARS)),
                 step=1,
                 value=[int(min(YEARS)) + 2, int(min(YEARS)) + 7]
-            )]),
-        html.Th(id='output-container-range-slider')
-
+            ),
+        ])
     ])
-])
 
 
 @app.callback(Output('graph0', 'figure'),

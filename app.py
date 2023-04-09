@@ -2,20 +2,26 @@ import dash
 from dash import dcc, html
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 from dash.dependencies import Input, Output
+from pandas import DataFrame
 
-game_info = pd.read_csv('games.csv')
+from auxiliary.config import LOG_LEVEL
+from auxiliary.stacked_area_plot import fill_stacked_area_plot
+from auxiliary.custom_logger import get_app_logger
 
+logger = get_app_logger(level=LOG_LEVEL)
+
+GAME_INFO = pd.read_csv('games.csv')
 # Delete rows which consist of at least one null
-game_info.dropna(inplace=True)
-
+GAME_INFO.dropna(inplace=True)
 # Delete rows which Year is less than 2000
-game_info = game_info[game_info['Year_of_Release'] >= 2000]
+GAME_INFO = GAME_INFO[GAME_INFO['Year_of_Release'] >= 2000]
+YEARS = pd.unique(GAME_INFO['Year_of_Release']).tolist()  # list with unique years
 
-YEARS = pd.unique(game_info['Year_of_Release']).tolist()  # list with unique years
+result_data: DataFrame = GAME_INFO
 
-app = dash.Dash(__name__, external_stylesheets=['https://codepen.io/chriddyp/pen/bWLwgP.css'])
+app = dash.Dash(__name__, title='Game Industry Analytics',
+                external_stylesheets=['https://codepen.io/chriddyp/pen/bWLwgP.css'])
 
 app.layout = html.Table(style={"width": "100%"}, className="responsive-table", children=[
 
@@ -70,8 +76,8 @@ app.layout = html.Table(style={"width": "100%"}, className="responsive-table", c
                     {'label': 'AO', 'value': 'AO'},
                     {'label': 'RP', 'value': 'RP'}
                 ],
-                            value=['E', 'M', 'T'],
-                            multi=True)]
+                             value=['E', 'M', 'T'],
+                             multi=True)]
             )
         ]
     ),
@@ -95,14 +101,13 @@ app.layout = html.Table(style={"width": "100%"}, className="responsive-table", c
                 marks={i: '{}'.format(i) for i in range(int(min(YEARS)), int(max(YEARS) + 1))},
                 min=int(min(YEARS)),
                 max=int(max(YEARS)),
+                step=1,
                 value=[int(min(YEARS)) + 2, int(min(YEARS)) + 7]
             )]),
         html.Th(id='output-container-range-slider')
+
     ])
 ])
-
-
-''' Filter Handler '''
 
 
 @app.callback(Output('graph0', 'figure'),
@@ -111,62 +116,24 @@ app.layout = html.Table(style={"width": "100%"}, className="responsive-table", c
               Input('filter1genre', 'value'),
               Input('filter2rating', 'value'),
               Input('filter3years', 'value'))
-def update_output(filter1genre, filter2rating, filter3years):
-    print(filter1genre, filter2rating, filter3years)
+def update_output(filter1genre: list, filter2rating: list, filter3years: list):
+    logger.info(f"Genres are {filter1genre}, ratings are {filter2rating}, years are {filter3years}")
 
-    # Работаем с годовым фильтром
-    x = filter3years[0]
-    res1 = game_info[game_info.Year_of_Release == x]
-    x += 1
-    while x <= filter3years[1]:
-        res1 = pd.concat([game_info[game_info.Year_of_Release == x], res1])
-        x += 1
+    # Working with year filter
+    years_interval = list(range(filter3years[0], filter3years[1] + 1))
+    result = GAME_INFO[GAME_INFO['Year_of_Release'].isin(years_interval)]
 
-    # Работаем с фильтром рейтингов
-    if filter2rating:
-        res2 = res1[res1.Rating == filter2rating[0]]
-        for i in range(1, len(filter2rating)):
-            res2 = pd.concat([res1[res1.Rating == filter2rating[i]], res2])
-    else:
-        res2 = res1
-        filter2rating = pd.unique(game_info['Rating']).tolist()
+    # Working with rating filter
+    result = result[result['Rating'].isin(filter2rating)]
 
-    # Работаем с фильтром жанров
-    if filter1genre:
-        res3 = res2[res2.Genre == filter1genre[0]]
-        for i in range(1, len(filter1genre)):
-            res3 = pd.concat([res2[res2.Genre == filter1genre[i]], res3])
-    else:
-        res3 = res2
-        filter1genre = pd.unique(game_info['Genre']).tolist()
+    # Working with genre filter
+    result = result[result['Genre'].isin(filter1genre)]
 
-    """The function of constructing a Stacked area plot showing the release of games
-     by year and platform"""
-    PLATFORMS = pd.unique(res3['Platform']).tolist()  # Number of different platforms
-    Stacked_area_plot = go.Figure(layout=go.Layout(
-        title=go.layout.Title(
-            text="Stacked area plot showing game releases by year and platform")))
-    for platform in PLATFORMS:
-        res_years = []
-        amount_games = []
-        for year in YEARS:
-            if filter3years[0] <= year <= filter3years[1]:
-                res_years.append(year)
-                amount_games.append(game_info[(game_info.Platform == platform) &
-                                              (game_info.Year_of_Release == year) &
-                                              (game_info.Genre.isin(filter1genre)) &
-                                              (game_info.Rating.isin(filter2rating))].index.shape[
-                                        0])  # Number of games for this platform this year
-        Stacked_area_plot.add_trace(go.Scatter(name=platform,
-                                               x=res_years,
-                                               y=amount_games,
-                                               stackgroup='one'))
+    quantity_games = result.shape[0]
 
-    quantity_games = res3.shape[0]
-
-    return Stacked_area_plot, px.scatter(res3, x="User_Score", y="Critic_Score", color="Genre",
-                                         hover_name="Name",
-                                         log_x=True, title='Scatter plot by genre'), \
+    return fill_stacked_area_plot(result), \
+        px.scatter(result, x="User_Score", y="Critic_Score", color="Genre",
+                   hover_name="Name", log_x=True, title='Scatter plot by genre'), \
         ("Number of games: " + str(quantity_games))
 
 

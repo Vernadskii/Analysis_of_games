@@ -43,6 +43,7 @@ app.layout = \
 
             html.Tr(
                 children=[
+
                     html.Th(
                         children=[
                             html.Label('Filter1: Genre filter (multiple choice)'),
@@ -77,6 +78,7 @@ app.layout = \
                                      value=['E', 'M', 'T'],
                                      multi=True)]
                     )
+
                 ]
             ),
 
@@ -84,16 +86,26 @@ app.layout = \
                 html.Td(dcc.Markdown(
                     id='quantity',
                     style={'width': '100%', 'display': 'flex', 'alignItems': 'center',
-                           'justifyContent': 'center'}),
+                           'justifyContent': 'center'}
+                ),
                     colSpan='2'),
             ]),
             html.Tr(children=[
-                html.Td(dcc.Graph(id='graph0',
-                                  style={'display': 'inline-block', 'width': '90vh',
-                                         'height': '80vh',
-                                         'align': "center"})),
-                html.Td(dcc.Graph(id='graph1', style={'width': '90vh', 'height': '80vh',
-                                                      'align': 'center'}))
+                html.Td(dcc.Graph(id='stacked_area_plot',
+                                  # style={'height':'auto', 'width': '100px'}
+                                  style={
+                                      'height': '50vh',
+                                      # 'width': '100%'
+                                  }
+                                  )
+                        ),
+                html.Td(dcc.Graph(id='scatter_plot',
+                                  style={
+                                      # 'width': '100%',
+                                      'height': '50vh',
+                                      'align': 'center'}
+                                  )
+                        )
             ])
         ]),
         html.Div(children=[
@@ -111,8 +123,8 @@ app.layout = \
     ])
 
 
-@app.callback(Output('graph0', 'figure'),
-              Output('graph1', 'figure'),
+@app.callback(Output('stacked_area_plot', 'figure'),
+              Output('scatter_plot', 'figure'),
               Output('quantity', 'children'),
               Input('filter1genre', 'value'),
               Input('filter2rating', 'value'),
@@ -130,12 +142,10 @@ def update_output(filter1genre: list, filter2rating: list, filter3years: list):
     # Working with genre filter
     result = result[result['Genre'].isin(filter1genre)]
 
-    quantity_games = result.shape[0]
-
     return fill_stacked_area_plot(result), \
         px.scatter(result, x="User_Score", y="Critic_Score", color="Genre",
                    hover_name="Name", log_x=True, title='Scatter plot by genre'), \
-        ("Number of games: " + str(quantity_games))
+        ("Number of games: " + str(result.shape[0]))
 
 
 if __name__ == '__main__':

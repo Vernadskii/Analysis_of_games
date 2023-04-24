@@ -1,6 +1,7 @@
 # Analysis of games
 
 [![CodeFactor](https://www.codefactor.io/repository/github/vernadskydanya/analysis_of_games/badge)](https://www.codefactor.io/repository/github/vernadskydanya/analysis_of_games)
+[![linting: pylint](https://img.shields.io/badge/linting-pylint-yellowgreen)](https://github.com/pylint-dev/pylint)
 
 Dashboard for analysis and visualization data of gaming industry 
 

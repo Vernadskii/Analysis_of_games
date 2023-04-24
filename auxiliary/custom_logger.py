@@ -1,7 +1,10 @@
+"""Module for loggers"""
+
 import logging
 
 
 def get_app_logger(name='app.py', level=logging.INFO):
+    """ Initialize logger """
     logger = logging.getLogger(name)
     logger.setLevel(level)
 

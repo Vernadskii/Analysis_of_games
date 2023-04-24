@@ -47,19 +47,9 @@ app.layout = \
                     html.Th(
                         children=[
                             html.Label('Filter1: Genre filter (multiple choice)'),
-                            dcc.Dropdown(id='filter1genre', clearable=False, options=[
-                                {'label': 'Sports', 'value': 'Sports'},
-                                {'label': 'Racing', 'value': 'Racing'},
-                                {'label': 'Platform', 'value': 'Platform'},
-                                {'label': 'Misc', 'value': 'Misc'},
-                                {'label': 'Action', 'value': 'Action'},
-                                {'label': 'Puzzle', 'value': 'Puzzle'},
-                                {'label': 'Shooter', 'value': 'Shooter'},
-                                {'label': 'Fightling', 'value': 'Fightling'},
-                                {'label': 'Simulation', 'value': 'Simulation'},
-                                {'label': 'Role-Playing', 'value': 'Role-Playing'},
-                                {'label': 'Adventure', 'value': 'Adventure'}
-                            ],
+                            dcc.Dropdown(id='filter1genre', clearable=False,
+                                         options=[{'label': val, 'value': val}
+                                                  for val in pd.unique(GAME_INFO['Genre']).tolist()],
                                          value=['Sports', 'Shooter'],
                                          multi=True)
                         ]
@@ -67,14 +57,9 @@ app.layout = \
 
                     html.Th(children=[
                         html.Label('Filter2: Rating filter'),
-                        dcc.Dropdown(id='filter2rating', clearable=False, options=[
-                            {'label': 'E', 'value': 'E'},
-                            {'label': 'M', 'value': 'M'},
-                            {'label': 'T', 'value': 'T'},
-                            {'label': 'E10+', 'value': 'E10+'},
-                            {'label': 'AO', 'value': 'AO'},
-                            {'label': 'RP', 'value': 'RP'}
-                        ],
+                        dcc.Dropdown(id='filter2rating', clearable=False,
+                                     options=[{'label': val, 'value': val}
+                                              for val in pd.unique(GAME_INFO['Rating']).tolist()],
                                      value=['E', 'M', 'T'],
                                      multi=True)]
                     )
@@ -143,9 +128,9 @@ def update_output(filter1genre: list, filter2rating: list, filter3years: list):
     result = result[result['Genre'].isin(filter1genre)]
 
     return fill_stacked_area_plot(result), \
-        px.scatter(result, x="User_Score", y="Critic_Score", color="Genre",
-                   hover_name="Name", log_x=True, title='Scatter plot by genre'), \
-        ("Number of games: " + str(result.shape[0]))
+           px.scatter(result, x="User_Score", y="Critic_Score", color="Genre",
+                      hover_name="Name", log_x=True, title='Scatter plot by genre'), \
+           ("Number of games: " + str(result.shape[0]))
 
 
 if __name__ == '__main__':

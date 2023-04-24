@@ -1,4 +1,4 @@
-# Module for building stacked area chart
+"""Module for building stacked area chart"""
 import pandas as pd
 from pandas import DataFrame
 from plotly.graph_objs import Figure

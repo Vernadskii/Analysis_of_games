@@ -1,8 +1,11 @@
+""" Module with main logic and frontend """
 import dash
 from dash import dcc, html
-import pandas as pd
-import plotly.express as px
 from dash.dependencies import Input, Output
+
+import plotly.express as px
+
+import pandas as pd
 from pandas import DataFrame
 
 from auxiliary.config import LOG_LEVEL
@@ -48,8 +51,10 @@ app.layout = \
                         children=[
                             html.Label('Filter1: Genre filter (multiple choice)'),
                             dcc.Dropdown(id='filter1genre', clearable=False,
-                                         options=[{'label': val, 'value': val}
-                                                  for val in pd.unique(GAME_INFO['Genre']).tolist()],
+                                         options=[
+                                             {'label': val, 'value': val}
+                                             for val in pd.unique(GAME_INFO['Genre']).tolist()
+                                         ],
                                          value=['Sports', 'Shooter'],
                                          multi=True)
                         ]
@@ -97,7 +102,7 @@ app.layout = \
             html.Label('Filter3: Interval of release years'),
             dcc.RangeSlider(
                 id='filter3years',
-                marks={i: '{}'.format(i) for i in
+                marks={i: f'{i}' for i in
                        range(int(min(YEARS)), int(max(YEARS) + 1))},
                 min=int(min(YEARS)),
                 max=int(max(YEARS)),
@@ -115,7 +120,9 @@ app.layout = \
               Input('filter2rating', 'value'),
               Input('filter3years', 'value'))
 def update_output(filter1genre: list, filter2rating: list, filter3years: list):
-    logger.info(f"Genres are {filter1genre}, ratings are {filter2rating}, years are {filter3years}")
+    """ Callback for dash. It tracks 3 input filters """
+    logger.info(f"Genres are %s, ratings are %s, years are %s",
+                filter1genre, filter2rating, filter3years)
 
     # Working with year filter
     years_interval = list(range(filter3years[0], filter3years[1] + 1))
